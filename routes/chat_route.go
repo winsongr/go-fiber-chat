@@ -6,5 +6,5 @@ import (
 )
 
 func ChatRoute(app *fiber.App) {
-	app.Post("/create_fetch", controllers.GetFetchChats)
+	app.Post("/create_fetch", controllers.CreateChat)
 }

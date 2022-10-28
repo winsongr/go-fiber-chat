@@ -2,14 +2,24 @@ package models
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
-type CreateFetchReq struct {
-	UserId primitive.ObjectID `json:"userId"`
-	SeconfdUserId primitive.ObjectID `json:"secondUserId"`
+type CreateChatReq struct {
+	UserId       primitive.ObjectID `json:"userId"`
+	SecondUserId primitive.ObjectID `json:"secondUserId"`
 }
 
-type CreateFetchRes struct {
+type CreateChatRes struct {
+	ChatId          primitive.ObjectID   `json:"_id"`
+	Users           []primitive.ObjectID `json:"users"`
+	IsGroup         bool                 `json:"isGroup"`
+	LatestMessage   string               `json:"latestMessage"`
+	LatestMessageId string               `json:"latestMessageId"`
+}
+
+type GetAllChatsReq struct {
 	UserId primitive.ObjectID `json:"userId"`
-	SeconfdUserId primitive.ObjectID `json:"secondUserId"`
-	Users []primitive.ObjectID `json:"users"`
-	
+}
+
+type GetAllChatsRes struct {
+	UserId primitive.ObjectID `json:"userId"`
+	Chats  []CreateChatRes    `json:"chats"`
 }
