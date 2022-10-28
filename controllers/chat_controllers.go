@@ -24,12 +24,13 @@ func CreateChat(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&chat); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"Status": err,
-			"Data": "",
+			"Status":  err,
+			"Message": err.Error(),
+			"Data":    nil,
 		})
 	}
 
-	chatFilter := bson.D{{Key: "isGroup", Value: false}, {Key: "users", Value: chat.UserId}, {Key: "users", Value: chat.SecondUserId}}
+	chatFilter := bson.D{{Key: "users", Value: bson.A{chat.UserId, chat.SecondUserId}}}
 	isChat := chatCollection.FindOne(ctx, chatFilter)
 
 	// no document was found
@@ -46,21 +47,106 @@ func CreateChat(c *fiber.Ctx) error {
 		result, err := chatCollection.InsertOne(ctx, chatNew)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-				"Status": err,
-				"Data":   result,
+				"Status":  err,
+				"Message": err.Error(),
+				"Data":    result,
 			})
 		}
 		return c.Status(http.StatusOK).JSON(fiber.Map{
-			"Status": "New Chat Formed",
-			"Data":   chatNew,
+			"Status":  "Suceess",
+			"Message": "Chat Created",
+			"Data":    chatNew,
 		})
 	}
 
 	// a chat was found
 	isChat.Decode(&resChat)
 	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"Status": "Chat already exist",
-		"Data":   resChat,
+		"Status":  "Success",
+		"Message": "Chat already present",
+		"Data":    resChat,
+	})
+}
+
+func AddToGroup(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var req models.AddToGroupReq
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"Status":  err,
+			"Message": err.Error(),
+			"Data":    nil,
+		})
+	}
+
+	filter := bson.D{{Key: "_id", Value: req.ChatId}}
+	update := bson.D{
+		{
+			Key: "$push",
+			Value: bson.D{
+				{
+					Key:   "users",
+					Value: req.ChatId,
+				},
+			},
+		},
+	}
+
+	err := chatCollection.FindOneAndUpdate(ctx, filter, update)
+	if err.Err() != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"Status":  err,
+			"Message": err.Err(),
+			"Data":    "Cant Add User",
+		})
+	}
+	return c.Status(200).JSON(fiber.Map{
+		"Status":  "Success",
+		"Message": "User Added",
+		"Data":    err,
+	})
+}
+
+func DeleteFromGroup(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var req models.DeleteFromGroupReq
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"Status":  err,
+			"Message": err.Error(),
+			"Data":    nil,
+		})
+	}
+
+	filter := bson.D{{Key: "_id", Value: req.ChatId}}
+	update := bson.D{
+		{
+			Key: "$pull",
+			Value: bson.D{
+				{
+					Key:   "users",
+					Value: req.ChatId,
+				},
+			},
+		},
+	}
+
+	err := chatCollection.FindOneAndUpdate(ctx, filter, update)
+	if err.Err() != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"Status":  err,
+			"Message": err.Err(),
+			"Data":    "Cant Delete User",
+		})
+	}
+	return c.Status(200).JSON(fiber.Map{
+		"Status":  "Success",
+		"Message": "User Removed",
+		"Data":    err,
 	})
 }
 
@@ -73,16 +159,18 @@ func GetAllChats(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&chat); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"Status": err,
-			"Data": "",
+			"Status":  err,
+			"Message": err.Error(),
+			"Data":    "",
 		})
 	}
 
 	results, err := chatCollection.Find(ctx, bson.D{{Key: "users", Value: chat.UserId}})
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{
-			"Status": err.Error(),
-			"Data": results,
+			"Status":  err.Error(),
+			"Message": err.Error(),
+			"Data":    results,
 		})
 	}
 
@@ -92,16 +180,17 @@ func GetAllChats(c *fiber.Ctx) error {
 		var singleChat models.CreateChatRes
 		if err = results.Decode(&singleChat); err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-				"Status": err.Error(),
-				"Data": "",
+				"Status":  err.Error(),
+				"Message": err.Error(),
+				"Data":    "",
 			})
 		}
 		chats = append(chats, singleChat)
 	}
 
 	return c.Status(200).JSON(fiber.Map{
-		"Status": "OK",
-		"Data": chats,
+		"Status":  "Success",
+		"Message": "All Chats provided",
+		"Data":    chats,
 	})
-
 }

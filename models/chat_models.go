@@ -8,7 +8,7 @@ type CreateChatReq struct {
 }
 
 type CreateChatRes struct {
-	ChatId          primitive.ObjectID   `json:"_id"`
+	ChatId          primitive.ObjectID   `json:"chatId"`
 	Users           []primitive.ObjectID `json:"users"`
 	IsGroup         bool                 `json:"isGroup"`
 	LatestMessage   string               `json:"latestMessage"`
@@ -22,4 +22,14 @@ type GetAllChatsReq struct {
 type GetAllChatsRes struct {
 	UserId primitive.ObjectID `json:"userId"`
 	Chats  []CreateChatRes    `json:"chats"`
+}
+
+type AddToGroupReq struct {
+	UserId primitive.ObjectID `json:"userId"`
+	ChatId primitive.ObjectID `json:"chatId"`
+}
+
+type DeleteFromGroupReq struct {
+	UserId primitive.ObjectID `json:"userId"`
+	ChatId primitive.ObjectID `json:"chatId"`
 }
